@@ -96,7 +96,7 @@
         </div>
 
         {{-- Main Two-Column Section: Form + Map --}}
-        <div data-reveal-group class="grid gap-8 lg:grid-cols-12 items-stretch">
+        <div data-reveal-group class="mt-8 sm:mt-10 lg:mt-12 grid gap-8 lg:grid-cols-12 items-stretch">
             {{-- Left: Enquiry Form (7 cols) --}}
             <div class="card p-6 sm:p-8 lg:col-span-7 flex flex-col justify-between">
                 <div>
