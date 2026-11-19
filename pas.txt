@@ -1,0 +1,3 @@
+Admin panel: http://127.0.0.1:8001/admin
+Email: admin@onthrill.com
+Password: JRS6eTqmdKAO8Xrt

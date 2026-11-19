@@ -1,0 +1,338 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+   Fonts: self-hosted woff2 only (every current browser supports it).
+   Latin subset; "swap" shows text immediately in a fallback font.
+   Outfit (headings) and Poppins (text) are both under the SIL Open Font Licence.
+   ------------------------------------------------------------------ */
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 400; font-display: swap; src: url('../fonts/poppins-400.woff2') format('woff2'); }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 500; font-display: swap; src: url('../fonts/poppins-500.woff2') format('woff2'); }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/poppins-600.woff2') format('woff2'); }
+@font-face { font-family: 'Poppins'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/poppins-700.woff2') format('woff2'); }
+@font-face { font-family: 'Outfit'; font-style: normal; font-weight: 500; font-display: swap; src: url('../fonts/outfit-500.woff2') format('woff2'); }
+@font-face { font-family: 'Outfit'; font-style: normal; font-weight: 600; font-display: swap; src: url('../fonts/outfit-600.woff2') format('woff2'); }
+@font-face { font-family: 'Outfit'; font-style: normal; font-weight: 700; font-display: swap; src: url('../fonts/outfit-700.woff2') format('woff2'); }
+
+@source '../views';
+@source '../js';
+
+/* ------------------------------------------------------------------
+   Design tokens
+   ------------------------------------------------------------------ */
+@theme {
+    --font-sans: 'Poppins', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji';
+    --font-display: 'Outfit', 'Poppins', ui-sans-serif, system-ui, sans-serif;
+
+    /* Saffron: the accent. Buttons, links, prices, small highlights. */
+    --color-saffron-50: #fff6ef;
+    --color-saffron-100: #ffeadb;
+    --color-saffron-200: #ffd2b5;
+    --color-saffron-300: #ffb487;
+    --color-saffron-400: #ff9a5e;
+    --color-saffron-500: #ff8335;
+    --color-saffron-600: #ec6a1c;
+    --color-saffron-700: #c45313;
+    --color-saffron-800: #9c4214;
+    --color-saffron-900: #7e3714;
+
+    /* Navy: a Himalayan evening blue. Headings, the top bar, footer and dark bands. */
+    --color-navy-50: #f1f6f8;
+    --color-navy-100: #dfeaef;
+    --color-navy-200: #c1d6df;
+    --color-navy-300: #95b8c7;
+    --color-navy-400: #6493a8;
+    --color-navy-500: #46768d;
+    --color-navy-600: #365f74;
+    --color-navy-700: #2d4e60;
+    --color-navy-800: #233e4e;
+    --color-navy-900: #13293a;
+    --color-navy-950: #0b1a22;
+
+    /* WhatsApp's official brand greens */
+    --color-whatsapp: #25d366;
+    --color-whatsapp-dark: #128c7e;
+
+    /* Light grey-blue of alternating sections and image placeholders */
+    --color-mist: #f3f7f9;
+    --color-ink: #1b2a33;
+
+    --shadow-card: 0 1px 2px rgb(16 40 54 / 0.05), 0 2px 8px -2px rgb(16 40 54 / 0.08);
+    --shadow-lift: 0 18px 40px -16px rgb(11 26 34 / 0.35);
+}
+
+/* ------------------------------------------------------------------
+   Base
+   ------------------------------------------------------------------ */
+@layer base {
+    html {
+        scroll-behavior: smooth;
+        -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+        @apply bg-white font-sans text-ink/80 antialiased;
+        /* Elements sliding in from the side must never make the page scroll sideways. */
+        overflow-x: clip;
+    }
+
+    h1, h2, h3, h4 {
+        @apply font-display font-semibold tracking-[-0.01em] text-navy-900;
+        text-wrap: balance;
+    }
+
+    :focus-visible {
+        @apply outline-2 outline-offset-2 outline-saffron-500;
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-delay: 0s !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+        }
+    }
+}
+
+/* ------------------------------------------------------------------
+   Components
+   ------------------------------------------------------------------ */
+@layer components {
+    .container-page {
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+
+    .section {
+        @apply py-16 sm:py-24;
+    }
+
+    /* Buttons */
+    .btn {
+        @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold leading-none whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-60;
+    }
+    .btn-primary {
+        @apply bg-saffron-600 text-white hover:bg-saffron-700 active:bg-saffron-800;
+    }
+    .btn-dark {
+        @apply bg-navy-900 text-white hover:bg-navy-800;
+    }
+    .btn-outline {
+        @apply border border-navy-200 bg-white text-navy-900 hover:border-navy-900;
+    }
+    /* On photographs and dark bands */
+    .btn-light {
+        @apply border border-white/70 text-white hover:border-white hover:bg-white hover:text-navy-900;
+    }
+    .btn-whatsapp {
+        @apply bg-whatsapp font-semibold text-white hover:bg-[#1ebe5b] active:bg-[#1aa851];
+    }
+    .btn-sm {
+        @apply px-3.5 py-2.5 text-[13px];
+    }
+    .btn-lg {
+        @apply px-7 py-4 text-base;
+    }
+
+    /* Forms */
+    .label {
+        @apply mb-1.5 block text-sm font-medium text-ink;
+    }
+    .input {
+        @apply block w-full rounded-md border border-navy-200 bg-white px-3.5 py-3 text-sm text-ink placeholder:text-ink/40 focus:border-saffron-600 focus:ring-2 focus:ring-saffron-500/25 focus:outline-none;
+    }
+    select.input {
+        @apply appearance-none bg-no-repeat pr-10;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2346768d'%3E%3Cpath fill-rule='evenodd' d='M5.2 7.2a.75.75 0 0 1 1.06 0L10 10.94l3.74-3.74a.75.75 0 1 1 1.06 1.06l-4.27 4.27a.75.75 0 0 1-1.06 0L5.2 8.26a.75.75 0 0 1 0-1.06Z' clip-rule='evenodd'/%3E%3C/svg%3E");
+        background-position: right 0.75rem center;
+        background-size: 1.25rem;
+    }
+    .field-error {
+        @apply mt-1.5 text-xs font-medium text-red-600;
+    }
+
+    /* Surfaces */
+    .card {
+        @apply rounded-lg border border-navy-100 bg-white shadow-card;
+    }
+    .badge {
+        @apply inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold;
+    }
+    /* Text link with an arrow, used for "View all" beside section titles */
+    .more-link {
+        @apply inline-flex items-center gap-1.5 text-sm font-semibold text-saffron-700 hover:text-saffron-800;
+    }
+
+    /* Rich text coming from the admin editor */
+    .rich {
+        @apply leading-relaxed text-ink/80;
+    }
+    .rich > * + * {
+        @apply mt-4;
+    }
+    .rich h2 {
+        @apply mt-10 text-2xl font-bold sm:text-3xl;
+    }
+    .rich h3 {
+        @apply mt-8 text-xl font-bold sm:text-2xl;
+    }
+    .rich h4 {
+        @apply mt-6 text-lg font-bold;
+    }
+    .rich > :first-child {
+        @apply mt-0;
+    }
+    .rich a {
+        @apply font-medium text-saffron-700 underline underline-offset-2 hover:text-saffron-800;
+    }
+    .rich strong {
+        @apply font-semibold text-ink;
+    }
+    .rich ul {
+        @apply space-y-2 pl-0;
+    }
+    .rich ul > li {
+        @apply relative pl-6;
+    }
+    .rich ul > li::before {
+        content: '';
+        @apply absolute top-[0.62em] left-1 size-1.5 rounded-full bg-saffron-500;
+    }
+    .rich ol {
+        @apply list-decimal space-y-2 pl-6 marker:font-semibold marker:text-saffron-600;
+    }
+    .rich img {
+        @apply my-6 h-auto max-w-full rounded-lg;
+    }
+    .rich hr {
+        @apply my-8 border-ink/10;
+    }
+    .rich blockquote {
+        @apply border-l-4 border-saffron-400 bg-saffron-50 py-3 pr-4 pl-5 italic;
+    }
+    .rich table {
+        @apply block w-full overflow-x-auto text-sm;
+    }
+    .rich th, .rich td {
+        @apply border border-ink/10 px-3 py-2 text-left;
+    }
+
+    /* Short accent bar under section titles */
+    .title-rule {
+        @apply mt-4 block h-[3px] w-12 rounded-full bg-saffron-500;
+    }
+
+    /* Horizontal scrollers hide their scrollbar but stay swipeable */
+    .no-scrollbar {
+        scrollbar-width: none;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+        display: none;
+    }
+}
+
+/* ------------------------------------------------------------------
+   Animation: one effect for the whole site. Content fades in and rises a
+   little, on page load (.anim-rise) or when scrolled into view (data-reveal).
+   Visitors who ask their device for reduced motion get none of it
+   (see the prefers-reduced-motion rule in Base).
+   ------------------------------------------------------------------ */
+@keyframes rise {
+    from { opacity: 0; transform: translateY(22px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes reveal-fallback {
+    to { opacity: 1; }
+}
+@keyframes page-progress {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(0.92); }
+}
+
+@layer components {
+    /* On page load: the hero and page titles come in one after another (--d = delay). */
+    .anim-rise {
+        animation: rise 0.7s cubic-bezier(0.22, 0.61, 0.36, 1) var(--d, 0ms) both;
+    }
+
+    /*
+     * On scroll: elements marked data-reveal (or the children of data-reveal-group)
+     * stay hidden until they come into view, then animate in. The <head> script adds
+     * .reveal-on before anything is painted; resources/js/reveal.js adds .is-visible.
+     */
+    .reveal-on [data-reveal]:not(.is-visible) {
+        opacity: 0;
+    }
+    /* Safety net: if the script never runs, show everything after 2.5 s. */
+    .reveal-on:not(.reveal-js) [data-reveal]:not(.is-visible) {
+        animation: reveal-fallback 0s 2.5s forwards;
+    }
+    .reveal-on [data-reveal].is-visible {
+        animation: rise 0.75s cubic-bezier(0.22, 0.61, 0.36, 1) var(--reveal-delay, 0ms) both;
+    }
+
+    /* Thin saffron bar at the very top while the next page is loading. */
+    .page-progress {
+        @apply pointer-events-none fixed inset-x-0 top-0 z-[100] h-[3px] origin-left bg-saffron-500;
+        transform: scaleX(0);
+    }
+    .page-progress.is-loading {
+        animation: page-progress 6s cubic-bezier(0.1, 0.7, 0.2, 1) forwards;
+    }
+}
+
+
+/*
+ * Main menu bar: white, or transparent over the homepage photo until the visitor
+ * scrolls (siteHeader in resources/js/ui.js adds .is-solid). Kept outside the
+ * layers above so these rules win over utility classes such as `flex`.
+ */
+.site-header {
+    @apply border-b border-navy-100 bg-white text-navy-900;
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+.site-header.is-scrolled {
+    @apply shadow-card;
+}
+.site-header .brand-light {
+    display: none;
+}
+.site-header.is-over-hero:not(.is-solid) {
+    @apply border-white/15 bg-transparent text-white;
+}
+.site-header.is-over-hero:not(.is-solid) .brand-dark {
+    display: none;
+}
+.site-header.is-over-hero:not(.is-solid) .brand-light {
+    display: flex;
+}
+.site-header.is-over-hero:not(.is-solid) .nav-link:hover,
+.site-header.is-over-hero:not(.is-solid) .nav-link.is-active {
+    @apply text-saffron-300;
+}
+
+/*
+ * Package cards on the packages page can be shown as a list (photo beside the
+ * text, with the summary) or as a grid. The page sets data-view on the list.
+ */
+.pkg-card-summary {
+    display: none;
+}
+@media (width >= 40rem) {
+    [data-view='list'] .pkg-card {
+        flex-direction: row;
+    }
+    [data-view='list'] .pkg-card-media {
+        width: 36%;
+        flex-shrink: 0;
+        aspect-ratio: auto;
+        min-height: 15rem;
+    }
+    [data-view='list'] .pkg-card-summary {
+        display: -webkit-box;
+    }
+}
