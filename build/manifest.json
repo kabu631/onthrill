@@ -1,0 +1,54 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-DbyfAAAq.css",
+    "name": "app",
+    "names": [
+      "app.css"
+    ],
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "assets": [
+      "assets/poppins-400-cpxAROuN.woff2",
+      "assets/poppins-500-C8OXljZJ.woff2",
+      "assets/poppins-600-zEkxB9Mr.woff2",
+      "assets/poppins-700-Qrb0O0WB.woff2",
+      "assets/outfit-500-DwRFpDWQ.woff2",
+      "assets/outfit-600-eKzYX13k.woff2",
+      "assets/outfit-700-DH66iFdQ.woff2"
+    ]
+  },
+  "resources/fonts/outfit-500.woff2": {
+    "file": "assets/outfit-500-DwRFpDWQ.woff2",
+    "src": "resources/fonts/outfit-500.woff2"
+  },
+  "resources/fonts/outfit-600.woff2": {
+    "file": "assets/outfit-600-eKzYX13k.woff2",
+    "src": "resources/fonts/outfit-600.woff2"
+  },
+  "resources/fonts/outfit-700.woff2": {
+    "file": "assets/outfit-700-DH66iFdQ.woff2",
+    "src": "resources/fonts/outfit-700.woff2"
+  },
+  "resources/fonts/poppins-400.woff2": {
+    "file": "assets/poppins-400-cpxAROuN.woff2",
+    "src": "resources/fonts/poppins-400.woff2"
+  },
+  "resources/fonts/poppins-500.woff2": {
+    "file": "assets/poppins-500-C8OXljZJ.woff2",
+    "src": "resources/fonts/poppins-500.woff2"
+  },
+  "resources/fonts/poppins-600.woff2": {
+    "file": "assets/poppins-600-zEkxB9Mr.woff2",
+    "src": "resources/fonts/poppins-600.woff2"
+  },
+  "resources/fonts/poppins-700.woff2": {
+    "file": "assets/poppins-700-Qrb0O0WB.woff2",
+    "src": "resources/fonts/poppins-700.woff2"
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-B5HKl2FJ.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}

@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+  <!--
+    Background for "How Online Poojan Works".
+    Jaali lattice (interlocking circles, as in carved temple screens), a toran of
+    lotus petals along the top and bottom edges, and a large faint lotus behind
+    the heading. Drawn at a fixed scale, so the pattern keeps its size on any screen.
+  -->
+  <defs>
+    <radialGradient id="ground" cx="50%" cy="35%" r="75%">
+      <stop offset="0" stop-color="#3d2614"/>
+      <stop offset="0.6" stop-color="#2a190d"/>
+      <stop offset="1" stop-color="#1a0f07"/>
+    </radialGradient>
+
+    <pattern id="jaali" width="72" height="72" patternUnits="userSpaceOnUse">
+      <g fill="none" stroke="#ff8335" stroke-opacity="0.13" stroke-width="1">
+        <circle cx="0" cy="0" r="36"/>
+        <circle cx="72" cy="0" r="36"/>
+        <circle cx="0" cy="72" r="36"/>
+        <circle cx="72" cy="72" r="36"/>
+        <circle cx="36" cy="36" r="36"/>
+      </g>
+      <g fill="#ff9a5e" fill-opacity="0.22">
+        <path d="m36 -3 3 3 -3 3 -3 -3z"/>
+        <path d="m36 69 3 3 -3 3 -3 -3z"/>
+        <path d="m-3 36 3 -3 3 3 -3 3z"/>
+        <path d="m69 36 3 -3 3 3 -3 3z"/>
+        <circle cx="36" cy="36" r="1.6"/>
+      </g>
+    </pattern>
+
+    <!-- Toran: a cord with hanging lotus petals -->
+    <pattern id="toran-top" width="40" height="34" patternUnits="userSpaceOnUse">
+      <path d="M0 3.5h40M0 8.5h40" stroke="#ff8335" stroke-opacity="0.45"/>
+      <path d="M20 10c7.5 5 7.5 13 0 20c-7.5-7-7.5-15 0-20z" fill="#ff8335" fill-opacity="0.2" stroke="#ff9a5e" stroke-opacity="0.55"/>
+      <path d="M20 13.5v12" stroke="#ff9a5e" stroke-opacity="0.4"/>
+      <circle cx="0" cy="12.5" r="1.8" fill="#ffb487" fill-opacity="0.55"/>
+      <circle cx="40" cy="12.5" r="1.8" fill="#ffb487" fill-opacity="0.55"/>
+    </pattern>
+    <pattern id="toran-bottom" width="40" height="34" patternUnits="userSpaceOnUse">
+      <path d="M0 30.5h40M0 25.5h40" stroke="#ff8335" stroke-opacity="0.45"/>
+      <path d="M20 24c7.5-5 7.5-13 0-20c-7.5 7-7.5 15 0 20z" fill="#ff8335" fill-opacity="0.2" stroke="#ff9a5e" stroke-opacity="0.55"/>
+      <path d="M20 20.5v-12" stroke="#ff9a5e" stroke-opacity="0.4"/>
+      <circle cx="0" cy="21.5" r="1.8" fill="#ffb487" fill-opacity="0.55"/>
+      <circle cx="40" cy="21.5" r="1.8" fill="#ffb487" fill-opacity="0.55"/>
+    </pattern>
+
+    <!-- One lotus petal, pointing up from the centre -->
+    <path id="petal" d="M0 -18c34 -40 34 -112 0 -152c-34 40 -34 112 0 152z"/>
+    <path id="petal-inner" d="M0 -30c20 -30 20 -76 0 -104c-20 28 -20 74 0 104z"/>
+  </defs>
+
+  <rect width="100%" height="100%" fill="url(#ground)"/>
+  <rect width="100%" height="100%" fill="url(#jaali)"/>
+
+  <!-- Lotus centred behind the heading -->
+  <svg x="50%" y="0" overflow="visible">
+    <g transform="translate(0 175)" fill="none" stroke="#ff9a5e" stroke-width="1.2">
+      <g stroke-opacity="0.11">
+        <use href="#petal"/>
+        <use href="#petal" transform="rotate(30)"/>
+        <use href="#petal" transform="rotate(60)"/>
+        <use href="#petal" transform="rotate(90)"/>
+        <use href="#petal" transform="rotate(120)"/>
+        <use href="#petal" transform="rotate(150)"/>
+        <use href="#petal" transform="rotate(180)"/>
+        <use href="#petal" transform="rotate(210)"/>
+        <use href="#petal" transform="rotate(240)"/>
+        <use href="#petal" transform="rotate(270)"/>
+        <use href="#petal" transform="rotate(300)"/>
+        <use href="#petal" transform="rotate(330)"/>
+      </g>
+      <g stroke-opacity="0.08">
+        <use href="#petal-inner" transform="rotate(15)"/>
+        <use href="#petal-inner" transform="rotate(45)"/>
+        <use href="#petal-inner" transform="rotate(75)"/>
+        <use href="#petal-inner" transform="rotate(105)"/>
+        <use href="#petal-inner" transform="rotate(135)"/>
+        <use href="#petal-inner" transform="rotate(165)"/>
+        <use href="#petal-inner" transform="rotate(195)"/>
+        <use href="#petal-inner" transform="rotate(225)"/>
+        <use href="#petal-inner" transform="rotate(255)"/>
+        <use href="#petal-inner" transform="rotate(285)"/>
+        <use href="#petal-inner" transform="rotate(315)"/>
+        <use href="#petal-inner" transform="rotate(345)"/>
+      </g>
+      <circle r="14" stroke-opacity="0.14"/>
+      <circle r="196" stroke-opacity="0.07" stroke-dasharray="2 7"/>
+    </g>
+  </svg>
+
+  <rect width="100%" height="34" fill="url(#toran-top)"/>
+  <rect y="100%" width="100%" height="34" transform="translate(0 -34)" fill="url(#toran-bottom)"/>
+</svg>

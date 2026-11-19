@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Location pin -->
+  <path d="M32 2C18.745 2 8 12.745 8 26c0 8.84 4.6 16.6 11.5 21L32 62l12.5-15C51.4 42.6 56 34.84 56 26 56 12.745 45.255 2 32 2Z" fill="#13293a"/>
+  <!-- Orange ring inside pin -->
+  <circle cx="32" cy="26" r="17.5" fill="#13293a" stroke="#ff8335" stroke-width="2.5"/>
+  <!-- Temple base -->
+  <rect x="21" y="35" width="22" height="2.8" rx=".6" fill="#ff8335"/>
+  <!-- Pillars -->
+  <rect x="23.5" y="28.5" width="2" height="6.5" rx=".4" fill="#ff8335"/>
+  <rect x="31" y="28.5" width="2" height="6.5" rx=".4" fill="#ff8335"/>
+  <rect x="38.5" y="28.5" width="2" height="6.5" rx=".4" fill="#ff8335"/>
+  <!-- Lower roof -->
+  <path d="M18.5 29 32 23l13.5 6H18.5Z" fill="#ff8335"/>
+  <!-- Upper roof -->
+  <path d="M23 23.5 32 18.5l9 5H23Z" fill="#ff8335"/>
+  <!-- Spire -->
+  <line x1="32" y1="18.5" x2="32" y2="13" stroke="#ff8335" stroke-width="2" stroke-linecap="round"/>
+  <!-- Finial -->
+  <circle cx="32" cy="11.5" r="2" fill="#ff8335"/>
+</svg>
