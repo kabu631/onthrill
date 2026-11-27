@@ -14,7 +14,7 @@ Requirements: PHP 8.3+, Composer, Node 20.19+ (22 or 24 recommended), MySQL/Mari
 
 ```bash
 composer install
-npm install                   # also installs the Angular app in frontend/
+npm --prefix frontend install # the Angular website (frontend/)
 cp .env.example .env          # then check the DB_* values
 php artisan key:generate
 ```
@@ -30,7 +30,7 @@ Then:
 ```bash
 php artisan migrate --seed    # tables, roles, destinations, packages, pages, photos; prints the admin password
 php artisan storage:link
-npm run build                 # builds the Angular website into public/app
+npm --prefix frontend run build   # builds the website into public/app
 composer serve                # http://127.0.0.1:8001
 ```
 
@@ -157,7 +157,7 @@ Set up sending in **Settings > Site Settings > Email** (SMTP from your host, Goo
 
 ## Deploying to a live server
 
-1. Run `npm run build`, then upload the project (everything except `node_modules` and `frontend/node_modules`; `public/app` must be included: it is the website).
+1. Run `npm --prefix frontend run build`, then upload the project (everything except `node_modules` and `frontend/node_modules`; `public/app` must be included: it is the website).
 2. Point the domain's document root to the **`public/`** folder.
 3. In `.env`: production settings as above, plus the database and mail settings.
 4. Run:
@@ -179,8 +179,8 @@ Set up sending in **Settings > Site Settings > Email** (SMTP from your host, Goo
 php artisan test                      # the automated tests
 php artisan images:thumbs             # right-sized copies after adding images by hand
 php artisan content:clean --dry-run   # tidy text pasted from Word or page builders (then without --dry-run)
-npm run dev                           # rebuild the website (public/app) on every change; refresh the browser
-npm run serve:app                     # or: Angular dev server on http://localhost:4200 (live reload), using the API on :8001
+npm --prefix frontend run watch       # rebuild the website (public/app) on every change; refresh the browser
+npm --prefix frontend start           # or: Angular dev server on http://localhost:4200 (live reload), using the API on :8001
 ```
 
 ## Project structure

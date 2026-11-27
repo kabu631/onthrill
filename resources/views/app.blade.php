@@ -123,7 +123,7 @@
                     </ul>
                 @endif
                 @unless (\App\Support\SpaAssets::built())
-                    <p><em>The website app has not been built yet. Run <code>npm run build</code> in the project folder.</em></p>
+                    <p><em>The website app has not been built yet. Run <code>npm --prefix frontend install</code> and <code>npm --prefix frontend run build</code> in the project folder.</em></p>
                 @endunless
             </main>
         </div>
