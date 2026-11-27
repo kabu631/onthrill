@@ -17,10 +17,8 @@ use App\Support\Thumbnails;
 use Filament\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Models\Role;
 
@@ -44,8 +42,6 @@ class AppServiceProvider extends ServiceProvider
         // Booking is for travellers: guests and customer accounts. Staff accounts
         // (any admin role) manage bookings but never make them.
         Gate::define('book', fn (?User $user) => $user === null || ! $user->isStaff());
-
-        Paginator::defaultView('partials.pagination');
 
         Thumbnails::resetRequestBudget();
 
@@ -79,10 +75,6 @@ class AppServiceProvider extends ServiceProvider
             $model::saved(fn () => Menu::flush());
             $model::deleted(fn () => Menu::flush());
         }
-
-        View::composer('components.layout', function ($view) {
-            $view->with('menu', Menu::get())->with('currency', visitor_currency());
-        });
 
         RateLimiter::for('forms', fn (Request $request) => Limit::perMinute(5)->by($request->ip()));
         RateLimiter::for('auth', fn (Request $request) => Limit::perMinute(8)->by($request->ip()));

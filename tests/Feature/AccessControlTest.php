@@ -232,11 +232,13 @@ class AccessControlTest extends TestCase
         $staff = $this->userWithRole('booking-staff');
         $customer = $this->userWithRole('customer');
 
-        $this->post('/login', ['email' => $staff->email, 'password' => 'password'])->assertRedirect('/admin');
-        $this->get('/')->assertSee('Admin Panel');
-        $this->post('/logout');
+        $this->postJson('/api/login', ['email' => $staff->email, 'password' => 'password'])->assertOk()->assertJson(['redirect' => '/admin']);
+        // The website app shows staff a link to the admin panel.
+        $this->getJson('/api/site')->assertJsonPath('user.is_staff', true)->assertJsonPath('can_book', false);
+        $this->postJson('/api/logout')->assertOk();
 
-        $this->post('/login', ['email' => $customer->email, 'password' => 'password'])->assertRedirect('/my-account');
+        $this->postJson('/api/login', ['email' => $customer->email, 'password' => 'password'])->assertJson(['redirect' => '/my-account']);
+        $this->getJson('/api/site')->assertJsonPath('user.is_staff', false)->assertJsonPath('can_book', true);
     }
 
     public function test_customers_are_never_sent_to_the_admin_panel_after_signing_up_or_in(): void
@@ -244,24 +246,24 @@ class AccessControlTest extends TestCase
         // Someone opens /admin while signed out (the browser remembers it), then
         // creates a customer account on the website.
         $this->get('/admin')->assertRedirect('/admin/login');
-        $this->post('/register', ['name' => 'Kabin', 'email' => 'new@example.com', 'password' => 'secret-123', 'password_confirmation' => 'secret-123'])
-            ->assertRedirect(route('account.index'));
-        $this->post('/logout');
+        $this->postJson('/api/register', ['name' => 'Kabin', 'email' => 'new@example.com', 'password' => 'secret-123', 'password_confirmation' => 'secret-123'])
+            ->assertOk()->assertJson(['redirect' => '/my-account']);
+        $this->postJson('/api/logout');
 
         // Same for signing in.
         $this->get('/admin')->assertRedirect('/admin/login');
-        $this->post('/login', ['email' => 'new@example.com', 'password' => 'secret-123'])->assertRedirect(route('account.index'));
-        $this->post('/logout');
+        $this->postJson('/api/login', ['email' => 'new@example.com', 'password' => 'secret-123'])->assertJson(['redirect' => '/my-account']);
+        $this->postJson('/api/logout');
 
         // Other pages a customer was trying to reach are still remembered...
         $this->get('/my-account/bookings/OT-1')->assertRedirect('/login');
-        $this->post('/login', ['email' => 'new@example.com', 'password' => 'secret-123'])->assertRedirect('/my-account/bookings/OT-1');
-        $this->post('/logout');
+        $this->postJson('/api/login', ['email' => 'new@example.com', 'password' => 'secret-123'])->assertJson(['redirect' => '/my-account/bookings/OT-1']);
+        $this->postJson('/api/logout');
 
         // ...and staff still land where they were heading in the admin panel.
         $staff = $this->userWithRole('booking-staff');
         $this->get('/admin/bookings')->assertRedirect('/admin/login');
-        $this->post('/login', ['email' => $staff->email, 'password' => 'password'])->assertRedirect('/admin/bookings');
+        $this->postJson('/api/login', ['email' => $staff->email, 'password' => 'password'])->assertJson(['redirect' => '/admin/bookings']);
     }
 
     public function test_a_customer_at_the_admin_panel_sees_why_and_can_switch_accounts(): void
@@ -281,30 +283,29 @@ class AccessControlTest extends TestCase
     {
         $this->withoutMiddleware(ThrottleRequests::class); // many posts in one test
         $package = $this->package();
-        $url = '/packages/'.$package->slug;
+        $url = '/api/packages/'.$package->slug;
 
         foreach ([Access::SUPER_ADMIN, 'manager', 'booking-staff', 'content-editor'] as $role) {
             $this->actingAs($this->userWithRole($role));
 
-            // The page shows a notice instead of the booking form…
-            $this->get($url)->assertOk()->assertSee('Booking is turned off for staff accounts')->assertDontSee('Send booking request');
+            // The website app is told to show a notice instead of the booking form…
+            $this->getJson('/api/site')->assertJsonPath('can_book', false);
 
-            // …and the server refuses, whether JavaScript is used or not.
+            // …and the server refuses the booking anyway.
             $this->postJson($url.'/book', $this->bookingForm())->assertForbidden()->assertJson(['message' => EnsureCanBook::MESSAGE]);
-            $this->from($url)->post($url.'/book', $this->bookingForm())->assertRedirect($url)->assertSessionHas('error');
             $this->assertSame(0, Booking::count(), "$role made a booking");
 
-            $this->post('/logout');
+            $this->postJson('/api/logout');
         }
 
         // A customer account and a guest can both book.
         $customer = $this->userWithRole('customer');
-        $this->actingAs($customer)->get($url)->assertSee('Send booking request');
-        $this->post($url.'/book', $this->bookingForm())->assertRedirect();
+        $this->actingAs($customer)->getJson('/api/site')->assertJsonPath('can_book', true);
+        $this->postJson($url.'/book', $this->bookingForm())->assertCreated();
         $this->assertSame($customer->id, Booking::sole()->user_id);
-        $this->post('/logout');
+        $this->postJson('/api/logout');
 
-        $this->post($url.'/book', $this->bookingForm(['email' => 'guest@example.com']))->assertRedirect();
+        $this->postJson($url.'/book', $this->bookingForm(['email' => 'guest@example.com']))->assertCreated();
         $this->assertSame(2, Booking::count());
     }
 }

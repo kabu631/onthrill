@@ -24,8 +24,9 @@ class PasswordResetTest extends TestCase
 
     public function test_sign_in_page_links_to_forgot_password(): void
     {
-        $this->get('/login')->assertOk()->assertSee(route('password.request'));
-        $this->get('/forgot-password')->assertOk()->assertSee('Email me a link');
+        $this->get('/login')->assertOk()->assertSee('<title>Sign in', false);
+        $this->get('/forgot-password')->assertOk();
+        $this->getJson('/api/site')->assertJsonPath('texts.login_forgot', 'Forgot password?')->assertJsonPath('texts.forgot_button', 'Email me a link');
     }
 
     public function test_customer_gets_a_reset_email_with_the_website_link(): void
@@ -33,9 +34,8 @@ class PasswordResetTest extends TestCase
         Notification::fake();
         $user = $this->customer();
 
-        $this->from('/forgot-password')->post('/forgot-password', ['email' => 'sita@example.com'])
-            ->assertRedirect('/forgot-password')
-            ->assertSessionHas('status');
+        $this->postJson('/api/forgot-password', ['email' => 'sita@example.com'])
+            ->assertOk()->assertJsonStructure(['message']);
 
         Notification::assertSentTo($user, ResetPasswordLink::class, function (ResetPasswordLink $notification) use ($user) {
             $mail = $notification->toMail($user);
@@ -54,9 +54,8 @@ class PasswordResetTest extends TestCase
         Notification::fake();
         $this->customer();
 
-        $this->from('/forgot-password')->post('/forgot-password', ['email' => 'nobody@example.com'])
-            ->assertSessionHas('status', fn ($status) => str_contains($status, 'If an account exists for nobody@example.com'))
-            ->assertSessionHasNoErrors();
+        $message = $this->postJson('/api/forgot-password', ['email' => 'nobody@example.com'])->assertOk()->json('message');
+        $this->assertStringContainsString('If an account exists for nobody@example.com', $message);
 
         Notification::assertNothingSent();
     }
@@ -66,19 +65,19 @@ class PasswordResetTest extends TestCase
         $user = $this->customer();
         $token = Password::createToken($user);
 
-        $this->get("/reset-password/{$token}?email=sita@example.com")->assertOk()->assertSee('Choose a new password')->assertSee('sita@example.com');
+        $this->get("/reset-password/{$token}?email=sita@example.com")->assertOk()->assertSee('Choose a new password');
 
-        $this->post('/reset-password', ['token' => $token, 'email' => 'sita@example.com', 'password' => 'new-secret-123', 'password_confirmation' => 'new-secret-123'])
-            ->assertRedirect(route('account.index'));
+        $this->postJson('/api/reset-password', ['token' => $token, 'email' => 'sita@example.com', 'password' => 'new-secret-123', 'password_confirmation' => 'new-secret-123'])
+            ->assertOk()->assertJson(['redirect' => '/my-account']);
 
         $this->assertAuthenticatedAs($user);
         $this->assertTrue(Hash::check('new-secret-123', $user->fresh()->password));
 
         // The link works only once.
-        $this->post('/logout');
-        $this->post('/reset-password', ['token' => $token, 'email' => 'sita@example.com', 'password' => 'another-pass-1', 'password_confirmation' => 'another-pass-1'])
-            ->assertRedirect(route('password.request'))
-            ->assertSessionHasErrors('email');
+        $this->postJson('/api/logout');
+        $this->postJson('/api/reset-password', ['token' => $token, 'email' => 'sita@example.com', 'password' => 'another-pass-1', 'password_confirmation' => 'another-pass-1'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('email');
         $this->assertTrue(Hash::check('new-secret-123', $user->fresh()->password));
     }
 
@@ -87,12 +86,12 @@ class PasswordResetTest extends TestCase
         $user = $this->customer();
         $token = Password::createToken($user);
 
-        $this->post('/reset-password', ['token' => 'not-the-token', 'email' => 'sita@example.com', 'password' => 'new-secret-123', 'password_confirmation' => 'new-secret-123'])
-            ->assertSessionHasErrors('email');
-        $this->post('/reset-password', ['token' => $token, 'email' => 'sita@example.com', 'password' => 'short', 'password_confirmation' => 'short'])
-            ->assertSessionHasErrors('password');
-        $this->post('/reset-password', ['token' => $token, 'email' => 'sita@example.com', 'password' => 'new-secret-123', 'password_confirmation' => 'different-123'])
-            ->assertSessionHasErrors('password');
+        $this->postJson('/api/reset-password', ['token' => 'not-the-token', 'email' => 'sita@example.com', 'password' => 'new-secret-123', 'password_confirmation' => 'new-secret-123'])
+            ->assertJsonValidationErrors('email');
+        $this->postJson('/api/reset-password', ['token' => $token, 'email' => 'sita@example.com', 'password' => 'short', 'password_confirmation' => 'short'])
+            ->assertJsonValidationErrors('password');
+        $this->postJson('/api/reset-password', ['token' => $token, 'email' => 'sita@example.com', 'password' => 'new-secret-123', 'password_confirmation' => 'different-123'])
+            ->assertJsonValidationErrors('password');
 
         $this->assertGuest();
         $this->assertTrue(Hash::check('password', $user->fresh()->password));
@@ -103,8 +102,8 @@ class PasswordResetTest extends TestCase
         $admin = User::factory()->create(['email' => 'admin@example.com'])->assignRole(Access::SUPER_ADMIN);
         $token = Password::createToken($admin);
 
-        $this->post('/reset-password', ['token' => $token, 'email' => 'admin@example.com', 'password' => 'new-secret-123', 'password_confirmation' => 'new-secret-123'])
-            ->assertRedirect('/admin');
+        $this->postJson('/api/reset-password', ['token' => $token, 'email' => 'admin@example.com', 'password' => 'new-secret-123', 'password_confirmation' => 'new-secret-123'])
+            ->assertOk()->assertJson(['redirect' => '/admin']);
         $this->get('/admin')->assertOk();
     }
 

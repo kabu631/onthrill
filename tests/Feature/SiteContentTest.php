@@ -63,7 +63,8 @@ class SiteContentTest extends TestCase
         auth()->logout();
         $this->get('/')->assertSee('Plan My Yatra')->assertSee('Good to know')->assertDontSee('Book a Tour');
         $this->get('/packages/muktinath-yatra-by-air')->assertSee('Ask about this yatra');
-        $this->get('/destinations/muktinath-temple')->assertSee('All about Muktinath Temple');
+        // ":name" is filled in by the website app: "All about Muktinath Temple".
+        $this->get('/destinations/muktinath-temple')->assertOk()->assertSee('All about :name');
 
         // A field left empty goes back to the original text.
         Settings::set(['menu_book_label' => '']);
@@ -81,13 +82,13 @@ class SiteContentTest extends TestCase
 
     public function test_enquiries_from_a_package_page_carry_the_package(): void
     {
+        // The package page sends its id with the page, for the enquiry box beside it.
         $this->get('/packages/muktinath-yatra-by-air')->assertOk()
             ->assertSee('Enquire about this tour')
-            ->assertSee('name="package_id" value="'.$this->package->id.'"', false);
+            ->assertSee('"id":'.$this->package->id.',"slug":"muktinath-yatra-by-air"', false);
 
-        $this->from('/packages/muktinath-yatra-by-air')
-            ->post('/enquiry', ['name' => 'Ram Thapa', 'phone' => '9801234567', 'message' => 'Is there a departure in May?', 'package_id' => $this->package->id])
-            ->assertRedirect('/packages/muktinath-yatra-by-air#enquiry-form');
+        $this->postJson('/api/enquiry', ['name' => 'Ram Thapa', 'phone' => '9801234567', 'message' => 'Is there a departure in May?', 'package_id' => $this->package->id])
+            ->assertCreated();
 
         $inquiry = Inquiry::sole();
         $this->assertSame($this->package->id, $inquiry->package_id);
@@ -96,10 +97,9 @@ class SiteContentTest extends TestCase
 
     public function test_enquiries_from_a_destination_page_carry_the_destination(): void
     {
-        $this->get('/destinations/muktinath-temple')->assertOk()
-            ->assertSee('name="destination_id" value="'.$this->destination->id.'"', false);
+        $this->getJson('/api/destinations/muktinath-temple')->assertOk()->assertJsonPath('destination.id', $this->destination->id);
 
-        $this->post('/enquiry', ['name' => 'Sita', 'phone' => '9801234567', 'message' => 'Best month?', 'destination_id' => $this->destination->id]);
+        $this->postJson('/api/enquiry', ['name' => 'Sita', 'phone' => '9801234567', 'message' => 'Best month?', 'destination_id' => $this->destination->id])->assertCreated();
 
         $this->assertSame('Muktinath Temple', Inquiry::sole()->topic());
     }
@@ -119,36 +119,33 @@ class SiteContentTest extends TestCase
 
     public function test_contact_page_shows_a_map(): void
     {
-        $this->get('/contact-us')->assertOk()
-            ->assertSee('Find us on the map')
-            ->assertSee('maps.google.com/maps?q=Kathmandu%2C%20Nepal', false);
+        // The app draws the map from the office address, or else the "map location".
+        $this->get('/contact-us')->assertOk()->assertSee('Find us on the map');
+        $this->getJson('/api/site')->assertJsonPath('site.map_location', 'Kathmandu, Nepal')->assertJsonPath('site.address', '');
 
         Settings::set(['address' => 'Thamel, Kathmandu']);
-        $this->get('/contact-us')->assertSee('maps.google.com/maps?q=Thamel%2C%20Kathmandu', false);
+        $this->getJson('/api/site')->assertJsonPath('site.address', 'Thamel, Kathmandu');
     }
 
-    public function test_packages_page_shows_a_list_by_default_with_a_grid_option(): void
+    public function test_packages_page_lists_the_tours_with_their_summaries(): void
     {
-        $this->get('/packages')->assertOk()
-            ->assertSee('data-view="list"', false)
-            ->assertSee("setView('grid')", false)
-            ->assertSee('Fly to Jomsom and reach Muktinath.'); // the summary shown in the list
+        $this->get('/packages')->assertOk()->assertSee('Muktinath Yatra by Air');
+        $this->getJson('/api/packages')->assertOk()
+            ->assertJsonPath('packages.data.0.summary', 'Fly to Jomsom and reach Muktinath.') // shown in the list view
+            ->assertJsonPath('packages.meta.total', 1);
     }
 
     public function test_header_shows_phone_and_whatsapp_and_no_home_link(): void
     {
         Settings::set(['phone' => '+977 9851000000', 'whatsapp' => '+977 9800000000']);
 
-        $html = $this->get('/packages')->assertOk()->getContent();
-        $this->assertStringContainsString('tel:9779851000000', $html);
-        $this->assertStringContainsString('wa.me/9779800000000', $html);
-        // The logo leads home; the main menu has no separate Home link.
-        preg_match('#<nav[^>]*aria-label="Main".*?</nav>#s', $html, $menu);
-        $this->assertNotEmpty($menu);
-        $this->assertStringNotContainsString('>Home</a>', $menu[0]);
+        // The header (drawn by the app) links them as tel: and wa.me.
+        $this->getJson('/api/site')->assertJsonPath('site.phone', '+977 9851000000')->assertJsonPath('site.whatsapp', '+977 9800000000');
 
-        // Transparent over the photo on the homepage only.
-        $this->get('/')->assertSee('is-over-hero', false);
-        $this->assertStringNotContainsString('is-over-hero', $html);
+        // The logo leads home; the main menu has no separate Home link.
+        $header = file_get_contents(base_path('frontend/src/app/layout/header.ts'));
+        preg_match('#<nav class="ml-auto hidden h-full xl:block" aria-label="Main">.*?</nav>#s', $header, $menu);
+        $this->assertNotEmpty($menu);
+        $this->assertStringNotContainsString("site.t('breadcrumb_home')", $menu[0]);
     }
 }

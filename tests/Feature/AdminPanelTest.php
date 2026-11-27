@@ -177,10 +177,14 @@ class AdminPanelTest extends TestCase
             ->call('save')
             ->assertHasNoFormErrors();
 
-        $this->get('/contact-us')->assertSee('Reach Us')->assertSee('We reply within one hour.');
-        $this->get('/gallery')->assertSee('Temple Photos');
-        $this->get('/')->assertSee('Why Families Choose Us')->assertSee('Is breakfast included?')
-            ->assertDontSee(setting('how_title'));
+        // In the page sent to search engines, and in the wording the website app shows.
+        $this->get('/contact-us')->assertSee('<title>Reach Us', false)->assertSee('We reply within one hour.');
+        $this->get('/gallery')->assertSee('<h1>Temple Photos</h1>', false);
+        $this->getJson('/api/site')
+            ->assertJsonPath('texts.contact_title', 'Reach Us')
+            ->assertJsonPath('site.why_title', 'Why Families Choose Us')
+            ->assertJsonPath('site.faqs.0.question', 'Is breakfast included?')
+            ->assertJsonPath('site.home_sections', ['hero', 'why', 'faq']);
     }
 
     public function test_smtp_settings_from_admin_are_used_for_sending(): void

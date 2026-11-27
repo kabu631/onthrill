@@ -1,0 +1,301 @@
+@if (p(); as p) {
+  <!-- Title, the places on the tour and the price -->
+  <section class="border-b border-navy-100 bg-sand">
+    <div class="container-page py-8 sm:py-10">
+      <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-ink/60 sm:text-sm">
+        <a routerLink="/" class="hover:text-saffron-700">{{ site.t('breadcrumb_home') }}</a>
+        <svg icon="chevron-right" class="size-3 text-ink/35"></svg>
+        <a routerLink="/packages" class="hover:text-saffron-700">{{ site.t('packages_title') }}</a>
+        @if (p.category) {
+          <svg icon="chevron-right" class="size-3 text-ink/35"></svg>
+          <a [routerLink]="p.category.url" class="hover:text-saffron-700">{{ p.category.name }}</a>
+        }
+        <svg icon="chevron-right" class="size-3 text-ink/35"></svg>
+        <span class="text-ink/85" aria-current="page">{{ p.name }}</span>
+      </nav>
+
+      <div class="mt-5 flex flex-wrap items-end justify-between gap-6">
+        <div class="max-w-3xl">
+          @if (p.category) {
+            <a [routerLink]="p.category.url" class="badge bg-saffron-600 text-white hover:bg-saffron-700">{{ p.category.name }}</a>
+          }
+          <h1 class="animate-rise mt-3 text-3xl leading-tight font-bold sm:text-4xl lg:text-[2.75rem]">{{ p.name }}</h1>
+          <ul class="animate-rise mt-3 flex flex-wrap gap-x-2 text-sm text-ink/70 [animation-delay:80ms] [&>li+li]:before:mr-2 [&>li+li]:before:text-ink/30 [&>li+li]:before:content-['·']">
+            <li>{{ p.duration }}</li>
+            @if (p.places.length) {
+              <li>
+                {{ p.places.slice(0, 4).join(', ') }}@if (p.places.length > 4) { +{{ p.places.length - 4 }} }</li>
+            }
+            @if (p.max_altitude_m) {
+              <li>{{ p.max_altitude_m | number }} m</li>
+            }
+          </ul>
+        </div>
+        <app-price class="animate-rise hidden text-right lg:block [animation-delay:120ms]" [package]="p" [large]="true" />
+      </div>
+    </div>
+  </section>
+
+  @if (p.photos.length) {
+    <div appReveal class="container-page mt-8"><app-photo-grid [photos]="p.photos" /></div>
+  }
+
+  <!-- Section tabs, kept under the header while reading -->
+  <nav [attr.aria-label]="p.name" class="sticky top-[4.5rem] z-30 mt-8 border-y border-navy-100 bg-white/95 backdrop-blur lg:top-[5.25rem]">
+    <div class="container-page">
+      <ul class="no-scrollbar -mx-4 flex gap-1 overflow-x-auto px-4 text-sm font-medium sm:mx-0 sm:px-0">
+        @for (tab of tabs(); track tab.id) {
+          <li>
+            <button type="button" (click)="goTo(tab.id)" class="block border-b-2 px-3 py-4 whitespace-nowrap transition-colors"
+                    [class]="active() === tab.id ? 'border-saffron-600 text-saffron-700' : 'border-transparent text-ink/70 hover:text-navy-900'">{{ tab.label }}</button>
+          </li>
+        }
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container-page pt-10 pb-16 sm:pb-20">
+    <div class="grid gap-12 lg:grid-cols-[1fr_23rem]">
+      <article class="min-w-0 space-y-14">
+        <!-- Overview -->
+        <section id="overview" class="scroll-mt-40">
+          <h2 class="text-2xl font-bold sm:text-3xl">{{ site.t('pkg_overview_title') }}</h2>
+          <span class="title-rule"></span>
+          <dl class="mt-7 grid grid-cols-2 gap-x-6 gap-y-5 rounded-xl border border-navy-100 p-5 sm:grid-cols-3 sm:p-6">
+            @for (fact of facts(); track fact.label) {
+              <div class="flex items-start gap-3">
+                <div class="min-w-0">
+                  <dt class="text-xs text-navy-500">{{ fact.label }}</dt>
+                  <dd class="mt-0.5 text-sm font-semibold text-navy-900">{{ fact.value }}</dd>
+                </div>
+              </div>
+            }
+          </dl>
+          @if (p.overview) {
+            <div class="rich mt-7" [innerHTML]="p.overview"></div>
+          } @else if (p.summary) {
+            <p class="mt-7 leading-relaxed">{{ p.summary }}</p>
+          }
+          @if (p.highlights.length) {
+            <h3 class="mt-9 text-xl font-semibold">{{ site.t('pkg_highlights_title') }}</h3>
+            <ul class="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
+              @for (h of p.highlights; track $index) {
+                <li class="relative pl-5 text-[15px] before:absolute before:top-[0.6em] before:left-0 before:size-1.5 before:rounded-full before:bg-saffron-500">{{ h }}</li>
+              }
+            </ul>
+          }
+        </section>
+
+        <!-- Day by day -->
+        @if (p.itinerary.length) {
+          <section id="itinerary" class="scroll-mt-40">
+            <div class="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 class="text-2xl font-bold sm:text-3xl">{{ site.t('pkg_itinerary_title') }}</h2>
+                <span class="title-rule"></span>
+              </div>
+              <button type="button" class="text-sm font-semibold text-saffron-700 hover:text-saffron-800" (click)="toggleAll()">{{ allOpen() ? site.t('pkg_close_all') : site.t('pkg_open_all') }}</button>
+            </div>
+            <ol class="relative mt-7 space-y-3 before:absolute before:top-6 before:bottom-6 before:left-[1.65rem] before:w-0.5 before:bg-navy-100 sm:before:left-[2.15rem]">
+              @for (day of p.itinerary; track $index; let i = $index) {
+                @let open = openDays().has(i);
+                <li class="relative">
+                  <div class="rounded-2xl border bg-white transition-shadow" [class]="open ? 'border-saffron-200 shadow-card' : 'border-navy-100'">
+                    <button type="button" class="flex w-full items-center gap-4 p-3 text-left sm:p-4" [attr.aria-expanded]="open" (click)="toggleDay(i)">
+                      <span class="grid w-12 shrink-0 place-items-center rounded-xl py-1.5 text-center text-white sm:w-14" [class]="open ? 'bg-saffron-600' : 'bg-navy-900'">
+                        <span class="text-[11px] leading-none font-medium opacity-80">{{ site.t('pkg_day') }}</span>
+                        <span class="font-display text-lg leading-tight font-bold">{{ pad(i + 1) }}</span>
+                      </span>
+                      <span class="min-w-0 flex-1 font-display text-[17px] font-semibold text-navy-900">{{ day.title }}</span>
+                      <svg icon="chevron-down" class="size-5 text-ink/45 transition-transform" [class.rotate-180]="open"></svg>
+                    </button>
+                    @if (open && day.description) {
+                      <p class="animate-fade pr-5 pb-5 pl-[4.75rem] leading-relaxed sm:pl-[5.75rem]">{{ day.description }}</p>
+                    }
+                  </div>
+                </li>
+              }
+            </ol>
+          </section>
+        }
+
+        <!-- Included / not included -->
+        @if (p.inclusions.length || p.exclusions.length) {
+          <section id="included" class="scroll-mt-40">
+            <h2 class="text-2xl font-bold sm:text-3xl">{{ site.t('pkg_included_title') }}</h2>
+            <span class="title-rule"></span>
+            <div class="mt-7 grid gap-5 sm:grid-cols-2">
+              @if (p.inclusions.length) {
+                <div class="rounded-2xl border border-green-100 bg-green-50/50 p-6">
+                  <h3 class="text-lg font-semibold">{{ site.t('pkg_included') }}</h3>
+                  <ul class="mt-4 space-y-2.5 text-sm">
+                    @for (item of p.inclusions; track $index) { <li class="flex gap-2.5"><svg icon="check" class="mt-0.5 size-4 text-green-700"></svg> {{ item }}</li> }
+                  </ul>
+                </div>
+              }
+              @if (p.exclusions.length) {
+                <div class="rounded-2xl border border-red-100 bg-red-50/40 p-6">
+                  <h3 class="text-lg font-semibold">{{ site.t('pkg_excluded') }}</h3>
+                  <ul class="mt-4 space-y-2.5 text-sm">
+                    @for (item of p.exclusions; track $index) { <li class="flex gap-2.5"><svg icon="x" class="mt-0.5 size-4 text-ink/40"></svg> {{ item }}</li> }
+                  </ul>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        @if (p.notes) {
+          <section id="before-you-go" class="scroll-mt-40">
+            <h2 class="text-2xl font-bold sm:text-3xl">{{ site.t('pkg_before_title') }}</h2>
+            <span class="title-rule"></span>
+            <div class="rich mt-7 rounded-2xl border-l-4 border-saffron-500 bg-saffron-50/60 p-6" [innerHTML]="p.notes"></div>
+          </section>
+        }
+
+        @if (p.destinations.length) {
+          <section id="places" class="scroll-mt-40">
+            <h2 class="text-2xl font-bold sm:text-3xl">{{ site.t('pkg_places_title') }}</h2>
+            <span class="title-rule"></span>
+            <ul class="mt-7 grid gap-4 sm:grid-cols-2">
+              @for (d of p.destinations; track d.id) {
+                <li>
+                  <a [routerLink]="d.url" class="group flex items-center gap-4 rounded-2xl border border-navy-100 p-3 transition-all hover:border-saffron-300 hover:shadow-card">
+                    <app-media [image]="d.image" [alt]="d.name" class="size-20 shrink-0 rounded-xl" />
+                    <span class="min-w-0 flex-1">
+                      <span class="block font-display text-[17px] font-semibold text-navy-900 group-hover:text-saffron-700">{{ d.name }}</span>
+                      <span class="mt-0.5 block text-xs text-ink/60">{{ d.region }}, {{ d.country }}@if (d.altitude_m) { · {{ d.altitude_m | number }} m }</span>
+                    </span>
+                  </a>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+
+        @if (p.faqs.length) {
+          <section id="faqs" class="scroll-mt-40">
+            <h2 class="text-2xl font-bold sm:text-3xl">{{ site.t('pkg_faq_title') }}</h2>
+            <span class="title-rule"></span>
+            <app-faq-list class="mt-7 block" [faqs]="p.faqs" [firstOpen]="false" />
+          </section>
+        }
+
+        <!-- Booking request -->
+        @if (site.canBook()) {
+          <section id="book" class="card scroll-mt-40 p-6 sm:p-8">
+            <app-booking-form [package]="p" />
+          </section>
+        }
+
+        <p class="text-xs text-ink/55">{{ site.t('last_updated', { date: p.updated }) }}</p>
+      </article>
+
+      <!-- Sidebar: the price, then an enquiry form about this tour that stays in view -->
+      <aside class="space-y-5">
+        <div class="card overflow-hidden">
+          <div class="relative overflow-hidden bg-navy-900 px-6 py-6 text-white">
+            @if (price(); as pr) {
+              <p class="text-xs tracking-wide text-white/60 uppercase">{{ site.t('price_from') }}</p>
+              <p class="mt-1 flex flex-wrap items-baseline gap-x-2">
+                <span class="font-display text-4xl font-bold">{{ site.money(pr.now) }}</span>
+                @if (pr.was) { <span class="text-sm text-white/55 line-through">{{ site.money(pr.was) }}</span> }
+              </p>
+              <p class="mt-1 text-sm text-white/70">{{ site.t('price_per_person') }}
+                @if (pr.off) { <span class="badge ml-1 bg-saffron-600 text-white">{{ site.t('price_off', { percent: pr.off }) }}</span> }
+              </p>
+            } @else {
+              <p class="font-display text-2xl font-semibold">{{ site.t('price_on_request') }}</p>
+              <p class="mt-1 text-sm text-white/70">{{ site.t('price_request_note') }}</p>
+            }
+          </div>
+
+          <div class="p-6">
+            @if (p.prices) {
+              <p class="text-xs text-ink/60">
+                {{ site.t('price_shown_in', { currency: site.currencyName() }) }} ·
+                <button type="button" class="font-medium text-saffron-700 underline underline-offset-2" (click)="site.setCurrency(site.currency() === 'NPR' ? 'INR' : 'NPR')">
+                  {{ site.t('price_switch', { currency: site.currency() === 'NPR' ? '₹ INR' : 'NPR' }) }}
+                </button>
+              </p>
+              @if (site.setting('advance_percent') > 0) {
+                <p class="mt-3 text-sm">{{ site.t('price_advance', { percent: advance() }) }}</p>
+              }
+            } @else {
+              <p class="text-sm">{{ site.t('price_request_text') }}</p>
+            }
+
+            @if (site.canBook()) {
+              <button type="button" (click)="goTo('book')" class="btn btn-primary btn-lg mt-5 w-full">{{ p.prices ? site.t('price_book_button') : site.t('price_request_button') }}</button>
+            } @else {
+              <!-- Staff accounts manage bookings but never make them. -->
+              <div class="mt-5 rounded-xl border border-navy-200 bg-mist p-5">
+                <p class="font-semibold text-ink">Booking is turned off for staff accounts</p>
+                <p class="mt-1 text-sm">You are signed in as {{ site.user()?.name }}, a staff account. To try a booking, sign out or use a customer account.</p>
+                <div class="mt-4 flex flex-wrap gap-3">
+                  @if (p.edit_url) { <a [href]="p.edit_url" class="btn btn-dark btn-sm">Edit in admin</a> }
+                  <button type="button" class="btn btn-outline btn-sm" (click)="signOut()">Sign out</button>
+                </div>
+              </div>
+            }
+            @if (site.whatsappNumber()) {
+              <a [href]="site.whatsappUrl(site.t('whatsapp_greeting') + ' ' + p.name)" target="_blank" rel="noopener" class="btn btn-whatsapp mt-3 w-full"><svg icon="whatsapp" class="size-4"></svg> {{ site.t('price_whatsapp') }}</a>
+            }
+
+            @if (site.setting('package_trust_points').length) {
+              <ul class="mt-6 space-y-2.5 border-t border-navy-100 pt-5 text-sm">
+                @for (point of site.setting('package_trust_points').slice(0, 4); track $index) {
+                  <li class="relative pl-5 before:absolute before:top-[0.6em] before:left-0 before:size-1.5 before:rounded-full before:bg-saffron-500">{{ point }}</li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+
+        <div id="enquiry" class="card scroll-mt-28 overflow-hidden lg:sticky lg:top-40">
+          <div class="border-b border-navy-100 px-6 pt-5 pb-4">
+            <h2 class="text-xl font-bold">{{ site.t('pkg_enquiry_title') }}</h2>
+            <p class="mt-1 text-sm">{{ site.t('pkg_enquiry_text') }}</p>
+          </div>
+          <div class="px-6 pb-6">
+            <app-enquiry-form [packageId]="p.id" [packageName]="p.name" [compact]="true" />
+          </div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  @if (data.value()!.related.length) {
+    <section class="section bg-sand">
+      <div class="container-page">
+        <app-section-heading align="left" [eyebrow]="site.t('eyebrow_packages')" [title]="site.t('pkg_similar_title')" />
+        <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          @for (item of data.value()!.related; track item.id; let i = $index) { <app-package-card appReveal [revealDelay]="i * 80" [package]="item" /> }
+        </div>
+      </div>
+    </section>
+  }
+
+  <!-- Price and booking button fixed to the bottom of the screen on phones -->
+  <div class="fixed inset-x-0 bottom-0 z-30 border-t border-navy-100 bg-white/95 px-4 py-3 shadow-lift backdrop-blur lg:hidden">
+    <div class="flex items-center justify-between gap-4">
+      <div class="min-w-0">
+        @if (price(); as pr) {
+          <p class="text-xs text-ink/60">{{ site.t('price_from') }} <span class="font-display text-lg font-bold text-saffron-700">{{ site.money(pr.now) }}</span> {{ site.t('price_per_person') }}</p>
+        } @else {
+          <p class="font-display text-base font-semibold text-navy-900">{{ site.t('price_on_request') }}</p>
+        }
+        <p class="truncate text-xs text-ink/55">{{ p.duration }}</p>
+      </div>
+      @if (site.canBook()) {
+        <button type="button" (click)="goTo('book')" class="btn btn-primary shrink-0">{{ p.prices ? site.t('mobile_book_button') : site.t('price_request_button') }}</button>
+      } @else {
+        <button type="button" (click)="goTo('enquiry')" class="btn btn-outline shrink-0">{{ site.t('pkg_enquiry_title') }}</button>
+      }
+    </div>
+  </div>
+} @else if (errorStatus(data) === 404) {
+  <app-not-found />
+} @else {
+  <app-loading />
+}
