@@ -41,7 +41,6 @@ class SeoController extends Controller
             'Disallow: /my-account',
             'Disallow: /booking/',
             'Disallow: /search',
-            'Disallow: /currency/',
             'Disallow: /login',
             'Disallow: /register',
             'Disallow: /forgot-password',

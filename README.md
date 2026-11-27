@@ -2,17 +2,19 @@
 
 Website and admin panel for pilgrimage and cultural tours: the temples of Nepal, the Chardham of Uttarakhand and Kailash Mansarovar in Tibet, for travellers from India and Nepal. Every package is priced in Indian rupees (INR) and Nepali rupees (NPR).
 
-Built with **Laravel 13 · MySQL · Blade + Tailwind CSS 4 + Alpine.js · Filament 5** (admin panel).
+Built with **Laravel 13 · MySQL · Filament 5** (admin panel and JSON API) and an **Angular 22** website (`frontend/`, Tailwind CSS 4).
+
+How the two fit together: every public address (`/`, `/packages/...`, `/destinations/...`) is still a Laravel route. Laravel sends the page's title, description, sharing tags, structured data and a plain outline of the content (what search engines and WhatsApp/Facebook previews read), plus the page's data. The Angular app, built into `public/app`, then draws the page and handles everything after that in the browser, reading `/api/...`. Sign-in, bookings and enquiries use the same session and CSRF protection as before.
 
 ---
 
 ## Run it locally (Windows + XAMPP)
 
-Requirements: PHP 8.3+, Composer, Node 20+, MySQL/MariaDB (XAMPP is fine).
+Requirements: PHP 8.3+, Composer, Node 20.19+ (22 or 24 recommended), MySQL/MariaDB (XAMPP is fine).
 
 ```bash
 composer install
-npm install
+npm install                   # also installs the Angular app in frontend/
 cp .env.example .env          # then check the DB_* values
 php artisan key:generate
 ```
@@ -28,7 +30,7 @@ Then:
 ```bash
 php artisan migrate --seed    # tables, roles, destinations, packages, pages, photos; prints the admin password
 php artisan storage:link
-npm run build
+npm run build                 # builds the Angular website into public/app
 composer serve                # http://127.0.0.1:8001
 ```
 
@@ -155,7 +157,7 @@ Set up sending in **Settings > Site Settings > Email** (SMTP from your host, Goo
 
 ## Deploying to a live server
 
-1. Upload the project (everything except `node_modules`; run `npm run build` first, or build on the server).
+1. Run `npm run build`, then upload the project (everything except `node_modules` and `frontend/node_modules`; `public/app` must be included: it is the website).
 2. Point the domain's document root to the **`public/`** folder.
 3. In `.env`: production settings as above, plus the database and mail settings.
 4. Run:
@@ -177,27 +179,33 @@ Set up sending in **Settings > Site Settings > Email** (SMTP from your host, Goo
 php artisan test                      # the automated tests
 php artisan images:thumbs             # right-sized copies after adding images by hand
 php artisan content:clean --dry-run   # tidy text pasted from Word or page builders (then without --dry-run)
-npm run dev                           # rebuild CSS/JS while editing styles
+npm run dev                           # rebuild the website (public/app) on every change; refresh the browser
+npm run serve:app                     # or: Angular dev server on http://localhost:4200 (live reload), using the API on :8001
 ```
 
 ## Project structure
 
 ```
 app/
-  Http/Controllers/     Home, Destination, Package, Booking, Page, Seo, Auth, Account
+  Http/Controllers/     ShellController (each page's SEO shell), SeoController (sitemap, robots, llms.txt)
+  Http/Controllers/Api/ JSON for the website: Catalog, Content (pages, search, enquiries), Booking, Account
   Models/               Destination, Package, TourCategory, Booking, Inquiry, Testimonial,
                         GalleryImage, Page, Setting, User
   Support/              Settings, Menu (navigation from destinations and tour types),
-                        Seo (structured data), Access (roles), Thumbnails, ContentCleaner
+                        Seo (structured data), Access (roles), Thumbnails, ContentCleaner,
+                        Catalog (queries), Present (JSON shapes), SiteData (public settings + wording)
   Policies/             Who may view/create/edit/delete each section
   Filament/             Admin panel: Resources/, Pages/ (Site Settings, Page Content), Widgets/
   helpers.php           setting(), media_url(), inr(), npr(), money(), whatsapp_url(), clean_html()
 config/site.php         Default values for every setting and page text
-resources/views/
-  components/           layout (meta tags, structured data), cards, price, page banner, icons
-  partials/             header, footer, search, forms, payment box
-  home/                 one file per homepage section
-  destinations/ packages/ bookings/ pages/ account/ auth/ mail/ seo/
+resources/views/       app.blade.php (the page shell), mail/, seo/, errors/403
+frontend/src/app/       The Angular website
+  core/                 site state (wording, currency, account), API helpers, SEO updates, types
+  layout/               header (top bar, menu, search), footer, floating buttons
+  shared/               cards, price, photo grid + viewer, forms, page banner, icons
+  pages/                home/, destinations, destination, packages, package/, booking, contact,
+                        gallery, search, cms-page, account/
+frontend/src/styles.css Colours, fonts and shared styles (Tailwind CSS 4)
 database/seeders/       DatabaseSeeder + data/ (destinations, packages, pages, photo credits) + assets/ (photos)
 tests/                  `php artisan test`
 ```

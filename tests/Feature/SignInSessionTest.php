@@ -29,11 +29,11 @@ class SignInSessionTest extends TestCase
     {
         $user = User::factory()->create(['remember_token' => null])->assignRole(Access::CUSTOMER);
 
-        $this->get('/login')->assertOk()->assertDontSee('name="remember"', false)->assertDontSee('Keep me signed in');
+        $this->get('/login')->assertOk()->assertDontSee('Keep me signed in');
 
-        // Even if an old form or a browser sends "remember", it is not used.
-        $response = $this->post('/login', ['email' => $user->email, 'password' => 'password', 'remember' => '1']);
-        $response->assertRedirect(route('account.index'));
+        // Even if a browser sends "remember", it is not used.
+        $response = $this->postJson('/api/login', ['email' => $user->email, 'password' => 'password', 'remember' => '1']);
+        $response->assertOk()->assertJson(['redirect' => '/my-account']);
         $this->assertAuthenticatedAs($user);
 
         $cookies = $this->cookies($response);

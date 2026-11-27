@@ -1,42 +1,77 @@
 <?php
 
-use App\Http\Controllers\AccountController;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\BookingController;
-use App\Http\Controllers\DestinationController;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\PackageController;
-use App\Http\Controllers\PageController;
-use App\Http\Controllers\PasswordResetController;
+use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\CatalogController;
+use App\Http\Controllers\Api\ContentController;
 use App\Http\Controllers\SeoController;
+use App\Http\Controllers\ShellController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', HomeController::class)->name('home');
+/*
+|--------------------------------------------------------------------------
+| JSON API, read by the Angular website (frontend/)
+|--------------------------------------------------------------------------
+| Same origin and the same session cookie as the pages, so signing in and
+| the CSRF check work exactly as before (Angular sends X-XSRF-TOKEN).
+*/
+Route::prefix('api')->name('api.')->group(function () {
+    Route::get('/site', [CatalogController::class, 'site'])->name('site');
+    Route::get('/home', [CatalogController::class, 'home'])->name('home');
+    Route::get('/destinations', [CatalogController::class, 'destinations'])->name('destinations');
+    Route::get('/destinations/{destination}', [CatalogController::class, 'destination'])->name('destination');
+    Route::get('/packages', [CatalogController::class, 'packages'])->name('packages');
+    Route::get('/packages/{package}', [CatalogController::class, 'package'])->name('package');
 
-// Destinations
-Route::get('/destinations', [DestinationController::class, 'index'])->name('destinations.index');
-Route::get('/destinations/country/{country}', [DestinationController::class, 'country'])
+    // Booking requests: guests and customers only, never staff.
+    Route::post('/packages/{package}/book', [BookingController::class, 'store'])->middleware(['book', 'throttle:forms'])->name('book');
+    Route::get('/bookings/{booking}', [BookingController::class, 'show'])->name('booking');
+
+    Route::get('/pages/{page}', [ContentController::class, 'page'])->name('page');
+    Route::get('/gallery', [ContentController::class, 'gallery'])->name('gallery');
+    Route::get('/search', [ContentController::class, 'search'])->name('search');
+    Route::get('/contact', [ContentController::class, 'contact'])->name('contact');
+    Route::post('/enquiry', [ContentController::class, 'enquire'])->middleware('throttle:forms')->name('enquiry');
+
+    Route::middleware('throttle:auth')->group(function () {
+        Route::post('/login', [AccountController::class, 'login'])->name('login');
+        Route::post('/register', [AccountController::class, 'register'])->name('register');
+        Route::post('/forgot-password', [AccountController::class, 'forgotPassword'])->name('password.email');
+        Route::post('/reset-password', [AccountController::class, 'resetPassword'])->name('password.update');
+    });
+    Route::post('/logout', [AccountController::class, 'logout'])->name('logout');
+
+    Route::middleware('auth')->group(function () {
+        Route::get('/account', [AccountController::class, 'show'])->name('account');
+        Route::put('/account', [AccountController::class, 'update'])->name('account.update');
+        Route::get('/account/bookings/{booking}', [AccountController::class, 'booking'])->name('account.booking');
+    });
+
+    Route::any('/{any}', fn () => abort(404))->where('any', '.*');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Website pages (drawn by the Angular app, see ShellController)
+|--------------------------------------------------------------------------
+*/
+Route::get('/', [ShellController::class, 'home'])->name('home');
+
+Route::get('/destinations', [ShellController::class, 'destinations'])->name('destinations.index');
+Route::get('/destinations/country/{country}', [ShellController::class, 'destinations'])
     ->whereIn('country', ['nepal', 'india', 'tibet'])->name('destinations.country');
-Route::get('/destinations/{destination}', [DestinationController::class, 'show'])->name('destinations.show');
+Route::get('/destinations/{destination}', [ShellController::class, 'destination'])->name('destinations.show');
 
-// Tour packages
-Route::get('/packages', [PackageController::class, 'index'])->name('packages.index');
-Route::get('/packages/type/{category}', [PackageController::class, 'category'])->name('packages.category');
-Route::get('/packages/{package}', [PackageController::class, 'show'])->name('packages.show');
+Route::get('/packages', [ShellController::class, 'packages'])->name('packages.index');
+Route::get('/packages/type/{category}', [ShellController::class, 'packages'])->name('packages.category');
+Route::get('/packages/{package}', [ShellController::class, 'package'])->name('packages.show');
+Route::get('/booking/{booking}', [ShellController::class, 'booking'])->name('bookings.show');
 
-// Booking requests: guests and customers only, never staff.
-Route::post('/packages/{package}/book', [BookingController::class, 'store'])
-    ->middleware(['book', 'throttle:forms'])->name('bookings.store');
-Route::get('/booking/{booking}', [BookingController::class, 'show'])->name('bookings.show');
-
-// Prices in Indian or Nepali rupees, remembered for the visitor.
-Route::get('/currency/{code}', [PageController::class, 'currency'])->whereIn('code', ['inr', 'npr'])->name('currency');
-
-// Content
-Route::get('/contact-us', [PageController::class, 'contact'])->name('contact');
-Route::post('/enquiry', [PageController::class, 'inquire'])->middleware('throttle:forms')->name('inquiry.store');
-Route::get('/gallery', [PageController::class, 'gallery'])->name('gallery');
-Route::get('/search', [PageController::class, 'search'])->name('search');
+Route::get('/contact-us', [ShellController::class, 'contact'])->name('contact');
+Route::get('/gallery', [ShellController::class, 'gallery'])->name('gallery');
+Route::get('/search', [ShellController::class, 'search'])->name('search');
 
 // Search engines and AI assistants
 Route::get('/sitemap.xml', [SeoController::class, 'sitemap'])->name('sitemap');
@@ -45,26 +80,27 @@ Route::get('/llms.txt', [SeoController::class, 'llms'])->name('llms');
 
 // Customer accounts
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
-
-    // Forgot password: a link by email, then a new password.
-    Route::get('/forgot-password', [PasswordResetController::class, 'request'])->name('password.request');
-    Route::post('/forgot-password', [PasswordResetController::class, 'email'])->middleware('throttle:auth')->name('password.email');
-    Route::get('/reset-password/{token}', [PasswordResetController::class, 'edit'])->name('password.reset');
-    Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:auth')->name('password.update');
+    Route::get('/login', [ShellController::class, 'form'])->defaults('titleKey', 'login_title')->name('login');
+    Route::get('/register', [ShellController::class, 'form'])->defaults('titleKey', 'register_title')->name('register');
+    Route::get('/forgot-password', [ShellController::class, 'form'])->defaults('titleKey', 'forgot_title')->name('password.request');
+    Route::get('/reset-password/{token}', [ShellController::class, 'form'])->defaults('titleKey', 'reset_title')->name('password.reset');
 });
 
 Route::middleware('auth')->group(function () {
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-    Route::get('/my-account', [AccountController::class, 'index'])->name('account.index');
-    Route::put('/my-account', [AccountController::class, 'update'])->name('account.update');
-    Route::get('/my-account/bookings/{booking}', [AccountController::class, 'booking'])->name('account.booking');
+    Route::get('/my-account', [ShellController::class, 'account'])->name('account.index');
+    Route::get('/my-account/bookings/{booking}', [ShellController::class, 'accountBooking'])->name('account.booking');
 });
 
+// Signing out from the admin panel's "not allowed" page (a plain form, not the app).
+Route::post('/logout', function (Request $request) {
+    Auth::guard('web')->logout();
+    $request->session()->invalidate();
+    $request->session()->regenerateToken();
+
+    return $request->input('next') === 'admin-login' ? redirect('/admin/login') : redirect()->route('home');
+})->name('logout');
+
 // CMS pages last, so they never shadow a real route.
-Route::get('/{page}', [PageController::class, 'show'])
-    ->where('page', '(?!admin$|livewire|filament|storage|up$)[a-z0-9-]+')
+Route::get('/{page}', [ShellController::class, 'page'])
+    ->where('page', '(?!admin$|livewire|filament|storage|app$|up$)[a-z0-9-]+')
     ->name('pages.show');

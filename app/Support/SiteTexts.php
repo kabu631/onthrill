@@ -53,12 +53,16 @@ class SiteTexts
 
         'Homepage' => [
             'Tour search bar' => [
+                'search_where' => ['Where to: label', 'Where to?'],
+                'search_where_placeholder' => ['Where to: placeholder', 'Temple, place or tour name'],
                 'search_destination' => ['Destination label', 'Destination'],
                 'search_anywhere' => ['Any destination', 'Anywhere'],
                 'search_type' => ['Tour type label', 'Type of tour'],
                 'search_all_types' => ['Any tour type', 'All tours'],
                 'search_duration' => ['Length label', 'Duration'],
                 'search_any_length' => ['Any length', 'Any length'],
+                'search_budget' => ['Budget label', 'Budget'],
+                'search_any_budget' => ['Any budget', 'Any budget'],
                 'search_button' => ['Button', 'Search tours'],
                 'search_price_note' => ['Note under the bar', 'Prices are shown in :currency.'],
                 'search_price_switch' => ['Link to switch currency', 'Show in :currency'],
@@ -84,6 +88,16 @@ class SiteTexts
                 'home_faq_box_text' => ['Questions: box text', 'We usually reply the same day.'],
                 'home_faq_box_button' => ['Questions: box button', 'Send an enquiry'],
                 'home_cta_button' => ['Call-to-action: button', 'Send an enquiry'],
+            ],
+            'Small labels above the section titles' => [
+                'eyebrow_destinations' => ['Destinations', 'Explore'],
+                'eyebrow_packages' => ['Tour packages', 'Featured tours'],
+                'eyebrow_why' => ['Why us', 'Why choose us'],
+                'eyebrow_how' => ['How booking works', 'Easy booking'],
+                'eyebrow_testimonials' => ['Testimonials', 'Reviews'],
+                'eyebrow_gallery' => ['Gallery', 'Memories'],
+                'eyebrow_faq' => ['Questions', 'Helpful answers'],
+                'eyebrow_cta' => ['Call-to-action', 'Plan your yatra'],
             ],
         ],
 
@@ -139,6 +153,13 @@ class SiteTexts
                 'list_all_types' => ['All tour types', 'All tours'],
                 'list_destination_heading' => ['Destination heading', 'Destination'],
                 'list_anywhere' => ['Any destination', 'Anywhere'],
+                'list_search_title' => ['Search heading', 'Search tours'],
+                'list_search_placeholder' => ['Search placeholder', 'Place, temple or tour'],
+                'list_budget_title' => ['Budget heading', 'Budget per person'],
+                'list_any_budget' => ['Any budget', 'Any budget'],
+                'budget_under' => ['Budget: lowest range', 'Under :amount'],
+                'budget_between' => ['Budget: middle ranges', ':from to :to'],
+                'budget_over' => ['Budget: highest range', 'Over :amount'],
                 'list_length_title' => ['Length heading', 'Length of tour'],
                 'list_any_length' => ['Any length', 'Any length'],
                 'duration_short' => ['Short tours', 'Up to 5 days'],
@@ -252,6 +273,9 @@ class SiteTexts
                 'contact_whatsapp_button' => ['WhatsApp button', 'Chat on WhatsApp'],
                 'contact_map_title' => ['Map heading', 'Find us on the map'],
                 'contact_directions' => ['Directions button', 'Get directions'],
+                'contact_email_note' => ['Under the email', 'We usually reply the same day.'],
+                'contact_office_badge' => ['Label above the office name', 'Head office'],
+                'contact_privacy' => ['Note under the form', 'Your contact details are only used to plan your tour.'],
             ],
             'Enquiry form (contact page and the side of tour pages)' => [
                 'enquiry_name' => ['Name', 'Your name'],
@@ -344,6 +368,9 @@ class SiteTexts
                 'search_none_text' => ['No results text', 'Try a different word, or ask us. We can plan a tour to places that are not listed here.', true],
                 'search_packages' => ['Packages heading', 'Tour packages'],
                 'search_destinations' => ['Destinations heading', 'Destinations'],
+                'search_types' => ['Tour types heading', 'Tour types'],
+                'search_popular' => ['Before typing: heading', 'Popular searches'],
+                'search_keys' => ['Keyboard hint', '↑ ↓ to choose, Enter to open'],
                 'search_too_short' => ['When fewer than 2 letters', 'Please type at least 2 characters.'],
                 'search_searching' => ['While searching', 'Searching…'],
                 'search_all_results' => ['Link to all results', 'See all results for “:term”'],
@@ -407,6 +434,12 @@ class SiteTexts
         }
 
         return self::$defaults;
+    }
+
+    /** @return array<string, string> every key with its current wording (sent to the website app) */
+    public static function all(): array
+    {
+        return collect(array_keys(self::defaults()))->mapWithKeys(fn ($key) => [$key => self::get($key)])->all();
     }
 
     /** The saved wording, or the starting text when the field was left empty. */

@@ -84,7 +84,9 @@ class StorefrontTest extends TestCase
         $this->get('/destinations/kedarnath')->assertNotFound();
         $this->get('/packages')->assertDontSee('Pashupatinath Darshan Tour');
         $this->get('/sitemap.xml')->assertDontSee('/packages/pashupatinath-darshan-tour')->assertDontSee('/destinations/kedarnath');
-        $this->post('/packages/pashupatinath-darshan-tour/book', $this->bookingForm())->assertNotFound();
+        $this->getJson('/api/packages/pashupatinath-darshan-tour')->assertNotFound();
+        $this->getJson('/api/packages')->assertJsonPath('packages.meta.total', 0);
+        $this->postJson('/api/packages/pashupatinath-darshan-tour/book', $this->bookingForm())->assertNotFound();
     }
 
     public function test_menu_groups_destinations_by_country(): void
@@ -98,14 +100,16 @@ class StorefrontTest extends TestCase
     {
         $this->get('/packages/pashupatinath-darshan-tour')->assertSee('₹12,000');
 
-        // The header switch stores the choice in a cookie and sends the visitor back.
-        $this->from('/packages')->get('/currency/npr')->assertRedirect('/packages')->assertCookie('currency', 'NPR');
-
-        $this->withCookie('currency', 'NPR')->get('/packages/pashupatinath-darshan-tour')->assertSee('NPR 19,200'); // 12,000 × 1.6
+        // The app gets both prices and switches at once; the choice is kept in a plain cookie.
+        $this->getJson('/api/packages/pashupatinath-darshan-tour')
+            ->assertJsonPath('package.prices.INR.now', 12000)
+            ->assertJsonPath('package.prices.NPR.now', 19200); // 12,000 × 1.6
+        $this->withUnencryptedCookie('currency', 'NPR')->get('/packages/pashupatinath-darshan-tour')->assertSee('NPR 19,200');
+        $this->withUnencryptedCookie('currency', 'NPR')->withCredentials()->getJson('/api/site')->assertJsonPath('currency', 'NPR');
 
         // A package's own NPR price wins over the exchange rate.
         $this->package->update(['price_npr' => 18500]);
-        $this->withCookie('currency', 'NPR')->get('/packages/pashupatinath-darshan-tour')->assertSee('NPR 18,500');
+        $this->getJson('/api/packages/pashupatinath-darshan-tour')->assertJsonPath('package.prices.NPR.now', 18500);
 
         // So does a new rate set in the admin panel.
         $this->package->update(['price_npr' => null]);
@@ -118,10 +122,10 @@ class StorefrontTest extends TestCase
         Mail::fake();
         Settings::set(['upi_id' => 'onthrill@sbi', 'booking_notify_email' => 'bookings@onthrill.com', 'advance_percent' => 25]);
 
-        $response = $this->post('/packages/pashupatinath-darshan-tour/book', $this->bookingForm());
+        $response = $this->postJson('/api/packages/pashupatinath-darshan-tour/book', $this->bookingForm());
 
         $booking = Booking::sole();
-        $response->assertRedirect(route('bookings.show', $booking));
+        $response->assertCreated()->assertJson(['reference' => $booking->reference, 'url' => '/booking/'.$booking->reference]);
         $this->assertMatchesRegularExpression('/^OT-\d{6}-[0-9A-F]{5}$/', $booking->reference);
         $this->assertSame('INR', $booking->currency);
         $this->assertEquals(36000, $booking->total);   // 3 travellers × ₹12,000
@@ -132,12 +136,16 @@ class StorefrontTest extends TestCase
         Mail::assertSent(BookingReceived::class, fn ($mail) => $mail->hasTo('bookings@onthrill.com'));
 
         $this->get(route('bookings.show', $booking))->assertOk()
-            ->assertSee($booking->reference)->assertSee('₹36,000')->assertSee('onthrill@sbi')
-            ->assertSee('<meta name="robots" content="noindex', false);
+            ->assertSee($booking->reference)->assertSee('<meta name="robots" content="noindex', false);
+        $this->getJson('/api/bookings/'.$booking->reference)->assertOk()
+            ->assertJsonPath('booking.total', 36000)
+            ->assertJsonPath('booking.payment.amount', 9000)
+            ->assertJsonPath('booking.payment.ids.0.value', 'onthrill@sbi');
 
         // Nobody else can open it.
         $this->flushSession();
         $this->get(route('bookings.show', $booking))->assertNotFound();
+        $this->getJson('/api/bookings/'.$booking->reference)->assertNotFound();
     }
 
     public function test_nepali_travellers_are_quoted_and_paid_in_nepali_rupees(): void
@@ -145,13 +153,17 @@ class StorefrontTest extends TestCase
         Mail::fake();
         Settings::set(['esewa_id' => '9801234567', 'upi_id' => 'onthrill@sbi']);
 
-        $this->post('/packages/pashupatinath-darshan-tour/book', $this->bookingForm(['nationality' => 'nepali', 'children' => 0]));
+        $this->postJson('/api/packages/pashupatinath-darshan-tour/book', $this->bookingForm(['nationality' => 'nepali', 'children' => 0]))->assertCreated();
 
         $booking = Booking::sole();
         $this->assertSame('NPR', $booking->currency);
         $this->assertEquals(38400, $booking->total); // 2 × NPR 19,200
 
-        $this->get(route('bookings.show', $booking))->assertSee('NPR 38,400')->assertSee('9801234567')->assertDontSee('onthrill@sbi');
+        $this->getJson('/api/bookings/'.$booking->reference)
+            ->assertJsonPath('booking.currency', 'NPR')
+            ->assertJsonPath('booking.total', 38400)
+            ->assertJsonPath('booking.payment.ids.0.value', '9801234567')
+            ->assertDontSee('onthrill@sbi');
 
         // The confirmation email carries the same payment details.
         $email = (new BookingReceived($booking))->render();
@@ -168,7 +180,7 @@ class StorefrontTest extends TestCase
         $kailash = Package::create(['name' => 'Kailash Mansarovar Yatra', 'duration_days' => 12, 'is_active' => true]);
 
         $this->get('/packages/kailash-mansarovar-yatra')->assertOk()->assertSee('Price on request');
-        $this->post('/packages/kailash-mansarovar-yatra/book', $this->bookingForm())->assertRedirect();
+        $this->postJson('/api/packages/kailash-mansarovar-yatra/book', $this->bookingForm())->assertCreated();
 
         $booking = Booking::where('package_id', $kailash->id)->sole();
         $this->assertNull($booking->total);
@@ -177,9 +189,9 @@ class StorefrontTest extends TestCase
 
     public function test_booking_requests_are_checked(): void
     {
-        $this->post('/packages/pashupatinath-darshan-tour/book', $this->bookingForm([
+        $this->postJson('/api/packages/pashupatinath-darshan-tour/book', $this->bookingForm([
             'travel_date' => now()->subDay()->toDateString(), 'adults' => 0, 'phone' => 'call me', 'nationality' => 'martian',
-        ]))->assertSessionHasErrors(['travel_date', 'adults', 'phone', 'nationality'], errorBag: 'booking');
+        ]))->assertUnprocessable()->assertJsonValidationErrors(['travel_date', 'adults', 'phone', 'nationality']);
 
         $this->assertSame(0, Booking::count());
     }
@@ -188,19 +200,53 @@ class StorefrontTest extends TestCase
     {
         Mail::fake();
 
-        $this->post('/enquiry', ['name' => 'Ram Thapa', 'phone' => '9801234567', 'message' => 'Is the tour open in July?', 'package_id' => $this->package->id])
-            ->assertRedirect();
+        $this->postJson('/api/enquiry', ['name' => 'Ram Thapa', 'phone' => '9801234567', 'message' => 'Is the tour open in July?', 'package_id' => $this->package->id])
+            ->assertCreated()->assertJson(['message' => wording('inquiry_success')]);
 
         $this->assertSame('Pashupatinath Darshan Tour', Inquiry::sole()->topic());
     }
 
     public function test_search_finds_packages_and_destinations(): void
     {
-        $this->getJson('/search?q=pashupati')->assertOk()
+        $this->getJson('/api/search?q=pashupati&limit=5')->assertOk()
             ->assertJsonFragment(['name' => 'Pashupatinath Darshan Tour'])
             ->assertJsonFragment(['name' => 'Pashupatinath Temple']);
 
         $this->get('/search?q=kedar')->assertOk()->assertSee('Kedarnath');
+    }
+
+    public function test_search_understands_places_tour_types_and_several_words(): void
+    {
+        $chardham = Package::create(['name' => 'Char Dham Yatra from Haridwar', 'duration_days' => 11, 'price_inr' => 34000, 'is_active' => true]);
+        $chardham->destinations()->attach($this->kedarnath);
+
+        // A tour is found by a place it visits, and by its tour type.
+        $this->getJson('/api/search?q=kedarnath&limit=5')->assertJsonPath('packages.0.name', 'Char Dham Yatra from Haridwar')
+            ->assertJsonPath('destinations.0.name', 'Kedarnath');
+        $this->getJson('/api/search?q=pilgrimage&limit=5')->assertJsonPath('types.0.name', 'Nepal Pilgrimage Tours')
+            ->assertJsonPath('packages.0.name', 'Pashupatinath Darshan Tour');
+
+        // Spaces do not matter, and every word must match.
+        $this->getJson('/api/search?q=chardham&limit=5')->assertJsonPath('packages.0.name', 'Char Dham Yatra from Haridwar');
+        $this->getJson('/api/search?q=pashupatinath+kathmandu&limit=5')->assertJsonCount(1, 'packages');
+        $this->getJson('/api/search?q=pashupatinath+haridwar&limit=5')->assertJsonCount(0, 'packages');
+    }
+
+    public function test_packages_can_be_searched_and_filtered_by_budget(): void
+    {
+        Package::create(['name' => 'Kailash Mansarovar Yatra', 'duration_days' => 12, 'price_inr' => 185000, 'is_active' => true]);
+
+        $this->getJson('/api/packages?q=kailash')->assertJsonPath('packages.meta.total', 1)->assertJsonPath('q', 'kailash');
+        $this->getJson('/api/packages?budget=under-15000')->assertJsonPath('packages.meta.total', 1)
+            ->assertJsonPath('packages.data.0.name', 'Pashupatinath Darshan Tour');
+        $this->getJson('/api/packages?budget=over-60000')->assertJsonPath('packages.data.0.name', 'Kailash Mansarovar Yatra');
+        $this->getJson('/api/packages?budget=nonsense')->assertJsonPath('budget', null)->assertJsonPath('packages.meta.total', 2);
+
+        // The budget choices come with their wording in both currencies.
+        $this->getJson('/api/site')->assertJsonPath('site.budgets.0.INR', 'Under ₹15,000')->assertJsonPath('site.budgets.0.NPR', 'Under NPR 24,000');
+
+        // Searched or filtered lists are kept out of search engines.
+        $this->get('/packages?q=kailash')->assertOk()->assertSee('<meta name="robots" content="noindex', false);
     }
 
     public function test_pages_carry_the_tags_search_engines_need(): void
@@ -247,6 +293,29 @@ class StorefrontTest extends TestCase
         $this->get('/llms.txt')->assertOk()
             ->assertSee('## Destinations in Nepal')->assertSee('Pashupatinath Temple')
             ->assertSee('## Tour packages')->assertSee('Pashupatinath Darshan Tour');
+    }
+
+    public function test_the_site_data_sent_to_browsers_holds_no_private_settings(): void
+    {
+        Settings::set([
+            'mail_host' => 'smtp.example.com', 'mail_username' => 'mailer@example.com', 'mail_password' => 'smtp-secret',
+            'upi_id' => 'onthrill@sbi', 'bank_details_india' => 'Account 1234567890', 'esewa_id' => '9801234567',
+            'booking_notify_email' => 'bookings@onthrill.com',
+        ]);
+
+        foreach ([$this->getJson('/api/site')->getContent(), $this->get('/')->getContent()] as $sent) {
+            foreach (['smtp.example.com', 'mailer@example.com', 'smtp-secret', 'onthrill@sbi', '1234567890', '9801234567', 'bookings@onthrill.com'] as $private) {
+                $this->assertStringNotContainsString($private, $sent);
+            }
+        }
+    }
+
+    public function test_unknown_addresses_get_the_apps_not_found_page_with_a_404(): void
+    {
+        $this->get('/no-such-page')->assertNotFound()->assertSee('<app-root>', false)
+            ->assertSee('<meta name="robots" content="noindex', false)->assertSee(wording('e404_title'));
+        $this->getJson('/api/nothing')->assertNotFound()->assertJsonStructure(['message']);
+        $this->getJson('/api/pages/no-such-page')->assertNotFound();
     }
 
     public function test_private_pages_are_kept_out_of_search_results(): void
